@@ -15,7 +15,7 @@ import {
 
 import keys from '../../../res/data/keys.json';
 
-export var FLAG_LANGUAGE={flag_language:'flag_language_anguage',flag_key:'flag_language_key'};
+export var FLAG_LANGUAGE={flag_language:'flag_language_language',flag_key:'flag_language_key'};
 
 export default class LanguageDao{
 
@@ -32,17 +32,19 @@ export default class LanguageDao{
         return new Promise((resolve,reject)=>{
             AsyncStorage.getItem(this.flag,(error,result)=>{
                 if (error){
+
                         reject(error)
                 }else {
-                     if (result){
+                     if (result&&result!=='[]'){
                          try {
                              resolve(JSON.parse((result)))
                          } catch (error){
                              reject(error)
                          }
                      }else {
+                         //如果是空,返回默认数据
                          var data = this.flag === FLAG_LANGUAGE.flag_key?keys:null;
-                         this.save(data);
+                         if (data){this.save(data)}
                          resolve(data)
                      }
                 }

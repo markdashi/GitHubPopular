@@ -10,20 +10,21 @@ import {
   StyleSheet,
   Text,
   View,
-    StatusBar,
-    TouchableOpacity,
-    Image
+  StatusBar,
+  TouchableOpacity,
+  Image,
 } from 'react-native';
 
 import {TabNavigator,StackNavigator} from 'react-navigation';
 
-import WelcomePage from './js/pages/WelcomePage';
 
+import WelcomePage from './js/pages/WelcomePage';
 import PopularPage from './js/pages/PopularPage';
 import MyPage from './js/pages/MyPage';
 import FavoritePage from './js/pages/FavoritePage';
 import TrendPage from './js/pages/TrendPage';
 import CustomKeyPage from './js/pages/CustomKeyPage';
+import SortKeyPage from 'SortKeyPage';
 
 const TabBar = TabNavigator({
     PopularPage:{
@@ -96,7 +97,8 @@ const App = StackNavigator({
     WelcomePage:{screen:WelcomePage},
     PopularPage:{screen:PopularPage},
     TabBar:{screen:TabBar},
-    CustomKeyPage:{screen:CustomKeyPage}
+    CustomKeyPage:{screen:CustomKeyPage},
+    SortKeyPage:{screen:SortKeyPage}
 },{
     navigationOptions:{
         headerStyle:{

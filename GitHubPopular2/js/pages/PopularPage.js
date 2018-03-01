@@ -8,7 +8,7 @@ import {
     ScrollView,
     TextInput,
     FlatList,
-    RefreshControl
+    DeviceEventEmitter
 } from 'react-native';
 
 
@@ -23,7 +23,7 @@ const QUERY_STA = '&sort=stars';
 
 import ScrollableTabView,{ScrollableTabBar} from 'react-native-scrollable-tab-view';
 
-
+import Toast,{DURATION} from 'react-native-easy-toast';
 
 export default class PopularPage extends Component<{}>{
 
@@ -67,7 +67,16 @@ export default class PopularPage extends Component<{}>{
 
     componentDidMount() {
         this.loadData()
+
+        // this.listener = DeviceEventEmitter.addListener('showToast',(text)=>{
+        //     this.toast.show(text,DURATION.LENGTH_LONG)
+        // })
     }
+
+    componentWillUnmount() {
+        // this.listener&& this.listener.remove();
+    }
+
     loadData(){
 
         this.languageDao.fetch()
@@ -85,14 +94,12 @@ export default class PopularPage extends Component<{}>{
 
 
     render(){
-
         let content = this.state.languages.length>0?<ScrollableTabView
             renderTabBar={()=><ScrollableTabBar/>}
             tabBarBackgroundColor="#2196F3"
             tabBarActiveTextColor="mintcream"
             tabBarInactiveTextColor="mintcream"
             tabBarUnderlineStyle={styles.UnderlineStyle}
-            style={{marginTop:-5}}
         >
             {this.state.languages.map((reult,i,arr)=>{
                 let lan = arr[i]
@@ -139,12 +146,31 @@ class PopularTab extends Component{
         });
 
         let appURL = this.getURL(this.props.tabLabel);
-        this.dataRepository.fetchNetRepository(appURL)
+        this.dataRepository.fetchRepository(appURL)
             .then((result)=>{
+
+                let items =result&&result.items?result.items:result?result:[];
+
                 this.setState({
                     text:JSON.stringify(result),
-                    dataSource:result.items,
+                    dataSource:items,
                     isLoading:false
+                })
+                if (result && result.update_date && !this.dataRepository.checkData(result.update_date)){
+                      // DeviceEventEmitter.emit('showToast','数据过期');
+                     return this.dataRepository.fetchNetRepository(appURL);
+                    
+                }else {
+                    // DeviceEventEmitter.emit('showToast','显示缓存数据');
+                    // this.toast.show('显示缓存数据',DURATION.LENGTH_LONG)
+                }
+
+            })
+            .then((items)=>{
+
+                if (!items && items.length===0)return;
+                this.setState({
+                    dataSource:items
                 })
             })
             .catch((error)=>{
@@ -158,6 +184,7 @@ class PopularTab extends Component{
 
     componentDidMount() {
         this.request();
+
     }
 
     renderItemCell(item){

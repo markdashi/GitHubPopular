@@ -25,12 +25,6 @@ import HeaderLeftButton from 'HeaderLeftButton';
 
 import HeaderRightButton from 'HeaderRightButton';
 
-// <Text
-//     onPress={()=>{
-//                        if (params.onSave){params.onSave()}
-//                     }}
-//     style={{fontSize:18,marginRight:10,color:'white'}}>{'保存'}</Text>
-
 export default class CustomKeyPage extends Component<{}>{
 
 
@@ -38,20 +32,26 @@ export default class CustomKeyPage extends Component<{}>{
 
         const params = navigation.state.params || {};
 
+        const isRemoveKey = params.isRemoveKey?true:false;
+        
+        let title=isRemoveKey?'标签移除':'自定义标签';
+        let rightButtonTitle=isRemoveKey?'移除':'保存';
+
         return {
-            title: '自定义标签',
+            title: title,
             headerRight: (
 
                 <HeaderRightButton
                     onPress={()=>{
                         if (params.onSave){params.onSave()}
                     }}
-                    title={'保存'}
+                    title={rightButtonTitle}
                 />
             ),
             headerLeft: (
                 <HeaderLeftButton onPress={()=>{
-                         Alert.alert(
+                if (params.isChanged&&params.isChanged()==true){
+                Alert.alert(
             '提示',
             '要保存修改吗?',
             [
@@ -63,6 +63,9 @@ export default class CustomKeyPage extends Component<{}>{
                 }}
             ]
         )
+                }else {
+                   navigation.goBack();
+                }
                 }}/>
             )
         }
@@ -71,6 +74,9 @@ export default class CustomKeyPage extends Component<{}>{
     // 构造
       constructor(props) {
         super(props);
+
+          let params = this.props.navigation.state.params;
+          this.isRemoveKey=params.isRemoveKey?true:false;
         // 初始状态
         this.state = {
             dataArray:[],
@@ -81,7 +87,7 @@ export default class CustomKeyPage extends Component<{}>{
 
 
     componentWillMount() {
-        this.props.navigation.setParams({ onSave: this.onSave});
+        this.props.navigation.setParams({ onSave: this.onSave,isChanged:this.isChanged});
     }
 
     componentDidMount() {
@@ -90,6 +96,7 @@ export default class CustomKeyPage extends Component<{}>{
 
         //加载默认数据
         this.loadData();
+
     }
 
     loadData(){
@@ -105,13 +112,30 @@ export default class CustomKeyPage extends Component<{}>{
             })
     }
 
-    //保存
+
+    //判断状态有没有变化
+    isChanged = ()=>{
+        if (this.changeValues.length==0) return false;
+        return true;
+    }
+
+
     onSave = ()=>{
 
-        if (this.changeValues.length === 0){
+        if (this.isChanged()==false){
             this.props.navigation.goBack();
             return;
         }
+
+
+        //标签移除
+        if (this.isRemoveKey){
+            //遍历改变的数组,移除元素
+            for (let i=0,len=this.changeValues.length;i<len;i++){
+                ArrayUtils.remove(this.state.dataArray,this.changeValues[i]);
+            }
+        }
+
         this.languageDao.save(this.state.dataArray);
         this.props.navigation.goBack();
     }
@@ -146,18 +170,22 @@ export default class CustomKeyPage extends Component<{}>{
         return views;
     }
     onClick(data){
-        data.checked=!data.checked;
+
+        !this.isRemoveKey?data.checked=!data.checked:null;
+        
         ArrayUtils.updateArray(this.changeValues,data);
     }
 
     renderCheckBox(data){
         let leftText = data.name;
+        let isChecked = this.isRemoveKey?false:data.checked;
+
         return(
             <CheckBox
                 style={{flex:1,padding:10}}
                 onClick={()=>this.onClick(data)}
                 leftText={leftText}
-                isChecked={data.checked}
+                isChecked={isChecked}
                 checkedImage={
                     <Image style={{tintColor:'#6495ED'}}
                     source={require('../../res/images/ic_check_box.png')}/>

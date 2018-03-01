@@ -9,16 +9,25 @@ import {
     View
 } from 'react-native';
 
+
+
 export default class MyPage extends Component<{}>{
     render(){
         return(
             <View style={styles.container}>
                 <Text onPress={()=>{
                         this.props.navigation.navigate('CustomKeyPage',{
-                            itemId:'5468999',
-                            name:'MyPage'
+                            isRemoveKey:false
                         })
                 }}>{'自定义标签页'}</Text>
+                <Text onPress={()=>{
+                        this.props.navigation.navigate('SortKeyPage')
+                }}>{'标签排序'}</Text>
+                <Text onPress={()=>{
+                        this.props.navigation.navigate('CustomKeyPage',{
+                            isRemoveKey:true
+                        })
+                }}>{'标签移除'}</Text>
             </View>
         )
     }
