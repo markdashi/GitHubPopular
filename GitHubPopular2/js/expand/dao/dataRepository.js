@@ -11,7 +11,28 @@ import {
     AsyncStorage
 } from 'react-native';
 
+export var FLAG_STOREAGE={flag_popular:'popular',flag_trending:'trending'};
+
+// 数据缓存策略:
+// 1.程序启动加载缓存数据
+//     - 判断缓存数据是否存在?
+//           - 存在: 判断数据是否过期 (设置一个过期时间) 过期? 加载网络数据并缓存 : 直接显示
+//           - 不存在: 加载网络数据并缓存
+
+import GitHubTrending from 'GitHubTrending';
 export default class dataRepository{
+
+    // 构造
+      constructor(flag) {
+
+        this.flag = flag;
+
+        if (flag == FLAG_STOREAGE.flag_trending){
+            this.trending = new GitHubTrending();
+        }
+        // 初始状态
+        this.state = {};
+      }
 
     fetchRepository(url){
         return new Promise((resovle,reject)=>{
@@ -41,8 +62,7 @@ export default class dataRepository{
                 })
         })
     }
-
-
+    
 
     /*获取本地数据*/
     fetchLocalRepsitory(url){
@@ -58,26 +78,37 @@ export default class dataRepository{
                     reject(error)
                 }
             })
-
         })
     }
 
 
     fetchNetRepository(url){
         return new  Promise((resolve,reject)=>{
-            fetch(url)
-                .then((response)=>response.json())
-                .then((result)=>{
-                    if (!result){
-                        reject(new Error('response Data is null'))
-                    }
-                    resolve(result.items);
-                    this.saveReposity(url,result.items)
 
-                })
-                .catch((error)=>{
-                    reject(error)
-                })
+            if (this.flag === FLAG_STOREAGE.flag_trending){
+                this.trending.fetchTrending(url)
+                    .then(result=>{
+                        if (!result) {
+                            reject(new Error('responseData is null'))
+                            return;
+                        }
+                        this.saveReposity(url,result);
+                        resolve(result);
+                    })
+            }else {
+                fetch(url)
+                    .then((response)=>response.json())
+                    .then((result)=>{
+                        if (!result){
+                            reject(new Error('response Data is null'))
+                        }
+                        resolve(result.items);
+                        this.saveReposity(url,result.items)
+                    })
+                    .catch((error)=>{
+                        reject(error)
+                    })
+            }
         })
     }
 
@@ -91,6 +122,8 @@ export default class dataRepository{
     //检查数据日期是否过期
 
     checkData(longTime){
+
+        return false;
 
         let cDate = new Date();
         let tDate = new  Date();

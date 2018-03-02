@@ -1,4 +1,6 @@
-
+/**
+ * @providesModule PopularPage
+ * */
 import React,{Component} from 'react';
 import {
     Platform,
@@ -14,9 +16,10 @@ import {
 
 import httpUtils from '../Utils/HttpUtils';
 
-import dataRepository from '../expand/dao/dataRepository';
+import dataRepository,{FLAG_STOREAGE} from '../expand/dao/dataRepository';
 import RepositoryCell from '../common/RepositoryCell';
 import LanguageDao,{FLAG_LANGUAGE} from '../expand/dao/LanguageDao';
+
 
 const URL = "https://api.github.com/search/repositories?q=";
 const QUERY_STA = '&sort=stars';
@@ -37,7 +40,7 @@ export default class PopularPage extends Component<{}>{
 
         this.languageDao = new LanguageDao(FLAG_LANGUAGE.flag_key);
 
-        this.dataRepository = new dataRepository(FLAG_LANGUAGE.flag_key);
+        this.dataRepository = new dataRepository(FLAG_STOREAGE.flag_popular);
         // 初始状态
         this.state = {
             text:'',
@@ -103,7 +106,7 @@ export default class PopularPage extends Component<{}>{
         >
             {this.state.languages.map((reult,i,arr)=>{
                 let lan = arr[i]
-                return lan.checked?<PopularTab tabLabel={lan.name} key={i}>lan.name</PopularTab>:null
+                return lan.checked?<PopularTab tabLabel={lan.name} key={i} {...this.props}>lan.name</PopularTab>:null
             })}
 
         </ScrollableTabView>:null;
@@ -139,7 +142,7 @@ class PopularTab extends Component{
         return URL + key + QUERY_STA;
     }
 
-    request(){
+    request(isUserLoading){
 
         this.setState({
             isLoading:true
@@ -149,29 +152,41 @@ class PopularTab extends Component{
         this.dataRepository.fetchRepository(appURL)
             .then((result)=>{
 
-                let items =result&&result.items?result.items:result?result:[];
 
-                this.setState({
-                    text:JSON.stringify(result),
-                    dataSource:items,
-                    isLoading:false
-                })
-                if (result && result.update_date && !this.dataRepository.checkData(result.update_date)){
-                      // DeviceEventEmitter.emit('showToast','数据过期');
-                     return this.dataRepository.fetchNetRepository(appURL);
-                    
+                if (!isUserLoading){
+                    let items =result&&result.items?result.items:result?result:[];
+
+                    this.setState({
+                        text:JSON.stringify(result),
+                        dataSource:items,
+                        isLoading:false
+                    })
                 }else {
-                    // DeviceEventEmitter.emit('showToast','显示缓存数据');
-                    // this.toast.show('显示缓存数据',DURATION.LENGTH_LONG)
+                    return this.dataRepository.fetchNetRepository(appURL);
                 }
 
-            })
-            .then((items)=>{
+                // if (result && result.update_date && !this.dataRepository.checkData(result.update_date)){
+                //
+                //      return this.dataRepository.fetchNetRepository(appURL);
+                // }
+                //
+                // else {
+                    // DeviceEventEmitter.emit('showToast','显示缓存数据');
+                    // this.toast.show('显示缓存数据',DURATION.LENGTH_LONG)
+                    alert('显示缓存数据')
+                // }
 
-                if (!items && items.length===0)return;
+            })
+            .then(items=>{
+
+
+                if (!items || items.length===0)return;
                 this.setState({
-                    dataSource:items
-                })
+                    dataSource:items,
+                    isLoading:false
+                });
+
+                alert('显示网络数据')
             })
             .catch((error)=>{
                 this.setState({
@@ -183,13 +198,20 @@ class PopularTab extends Component{
     }
 
     componentDidMount() {
-        this.request();
+        this.request(false);
 
+    }
+    onSelect = (item)=>{
+        this.props.navigation.navigate('RepositoryDetail',{
+            item:item
+        })
     }
 
     renderItemCell(item){
         return(
-            <RepositoryCell data={item}/>
+            <RepositoryCell
+                onSelect={()=>this.onSelect(item)}
+                data={item}/>
         )
     }
     _keyExtractor = (item, index) => ''+item.id;
@@ -201,7 +223,7 @@ class PopularTab extends Component{
                 data={this.state.dataSource}
                 renderItem={({item})=>this.renderItemCell(item)}
                 keyExtractor={this._keyExtractor}
-                onRefresh={()=>{this.request()}}
+                onRefresh={()=>{this.request(true)}}
                 refreshing={this.state.isLoading}
                 />
             </View>

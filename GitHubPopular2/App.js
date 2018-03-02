@@ -25,6 +25,7 @@ import FavoritePage from './js/pages/FavoritePage';
 import TrendPage from './js/pages/TrendPage';
 import CustomKeyPage from './js/pages/CustomKeyPage';
 import SortKeyPage from 'SortKeyPage';
+import RepositoryDetail from 'RepositoryDetail';
 
 const TabBar = TabNavigator({
     PopularPage:{
@@ -98,7 +99,8 @@ const App = StackNavigator({
     PopularPage:{screen:PopularPage},
     TabBar:{screen:TabBar},
     CustomKeyPage:{screen:CustomKeyPage},
-    SortKeyPage:{screen:SortKeyPage}
+    SortKeyPage:{screen:SortKeyPage},
+    RepositoryDetail:{screen:RepositoryDetail}
 },{
     navigationOptions:{
         headerStyle:{
