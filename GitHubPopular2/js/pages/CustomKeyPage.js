@@ -35,6 +35,9 @@ export default class CustomKeyPage extends Component<{}>{
         const isRemoveKey = params.isRemoveKey?true:false;
         
         let title=isRemoveKey?'标签移除':'自定义标签';
+
+        title= params.flag === FLAG_LANGUAGE.flag_language?'自定义语言':title;
+
         let rightButtonTitle=isRemoveKey?'移除':'保存';
 
         return {
@@ -92,7 +95,7 @@ export default class CustomKeyPage extends Component<{}>{
 
     componentDidMount() {
 
-        this.languageDao = new LanguageDao(FLAG_LANGUAGE.flag_key);
+        this.languageDao = new LanguageDao(this.props.navigation.state.params.flag);
 
         //加载默认数据
         this.loadData();

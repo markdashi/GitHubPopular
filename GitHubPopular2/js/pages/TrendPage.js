@@ -10,6 +10,8 @@ import {
     ScrollView,
     TextInput,
     FlatList,
+    TouchableOpacity,
+    Image
 } from 'react-native';
 
 
@@ -17,6 +19,13 @@ import dataRepository,{FLAG_STOREAGE} from '../expand/dao/dataRepository';
 import TrendingCell from 'TrendingCell';
 import LanguageDao,{FLAG_LANGUAGE} from '../expand/dao/LanguageDao';
 
+import Popover from '../common/Popover';
+import TimeSpan from 'TimeSpan';
+var timeSpanTextArray=[
+    new TimeSpan('今 天','since=daily'),
+    new TimeSpan('本 周','since=weekly'),
+    new TimeSpan('本 月','since=monthly')
+];
 
 import HeaderLeftButton from 'HeaderLeftButton';
 
@@ -28,12 +37,51 @@ import ScrollableTabView,{ScrollableTabBar} from 'react-native-scrollable-tab-vi
 
 import Toast,{DURATION} from 'react-native-easy-toast';
 
+import PropTypes from 'prop-types';
+
+class HeadeTitle extends Component<{}>{
+
+    static propTypes={
+        onTitlePress:PropTypes.func,
+        button:PropTypes.element,
+        timeSpan:PropTypes.object
+    };
+
+    render() {
+        return (
+            <TouchableOpacity
+                ref='button'
+                onPress={()=>{
+                    this.props.onTitlePress(this.refs.button)
+                }}
+                style={{flexDirection:'row',alignItems:'center'}}>
+                <Text style={{color:'white',fontSize:16}}>{'趋势 '+ this.props.timeSpan.showText}</Text>
+                <Image
+                    source={require('../../res/images/ic_spinner_triangle.png')}
+                    style={{ width: 10, height: 10 ,marginLeft:5}}
+                />
+            </TouchableOpacity>
+        );
+    }
+}
+
 
 export default class TrendPage extends Component<{}>{
 
-    static navigationOptions={
-        title:'趋势',
-    }
+    static navigationOptions=({navigation})=> {
+
+        const parmas = navigation.state.params || {};
+
+        return{
+            headerTitle:<HeadeTitle
+                timeSpan={parmas.timeSpan?parmas.timeSpan:timeSpanTextArray[0]}
+                onTitlePress={(button)=>{
+                    if (parmas.showPopover){parmas.showPopover(button)}
+              }
+            }
+            />
+        }
+    };
 
     // 构造
     constructor(props) {
@@ -43,11 +91,17 @@ export default class TrendPage extends Component<{}>{
 
         // 初始状态
         this.state = {
-            languages:[]
-        };
+            languages: [],
+            isVisible: false,
+            fromRect: {},
+            timeSpan: timeSpanTextArray[0]
+        }
     }
 
     componentDidMount() {
+
+        this.props.navigation.setParams({showPopover:this.showPopover})
+
         this.loadData()
     }
 
@@ -63,7 +117,31 @@ export default class TrendPage extends Component<{}>{
             .catch((error)=>{
                 console.log(error);
             })
+    }
 
+
+    //Popover 相关
+
+    showPopover = (button) =>{
+        button.measure((ox, oy, width, height, px, py) => {
+            this.setState({
+                fromRect: {x: px, y: py-50, width: width, height: height},
+                isVisible: true
+            });
+        });
+    };
+
+
+    closePopover() {
+        this.setState({isVisible: false});
+    }
+
+    onSelectTimeSpan(timeSpan){
+        this.setState({
+            isVisible:false,
+            timeSpan:timeSpan
+        });
+        this.props.navigation.setParams({timeSpan:timeSpan})
     }
 
     render(){
@@ -76,14 +154,28 @@ export default class TrendPage extends Component<{}>{
         >
             {this.state.languages.map((reult,i,arr)=>{
                 let lan = arr[i]
-                return lan.checked?<TrendTab tabLabel={lan.name} key={i} {...this.props}>lan.name</TrendTab>:null
+                return lan.checked?<TrendTab tabLabel={lan.name} key={i} timeSpan={this.state.timeSpan} {...this.props}>lan.name</TrendTab>:null
             })}
 
         </ScrollableTabView>:null;
 
+        let timeSpanView = (<Popover
+            fromRect={this.state.fromRect}
+            isVisible={this.state.isVisible}
+            placement="bottom"
+            contentStyle={{backgroundColor:'#343434',opacity:0.8}}
+            onClose={()=>this.closePopover()}>
+            {timeSpanTextArray.map((result,i,arr)=>{
+                return <TouchableOpacity key={i} onPress={()=>{this.onSelectTimeSpan(arr[i])}}>
+                    <Text style={{fontSize:16,color:'white',fontWeight:'800',padding:5}}>{arr[i].showText}</Text>
+                </TouchableOpacity>
+            })}
+        </Popover>);
+
         return(
             <View style={styles.container}>
                 {content}
+                {timeSpanView}
             </View>
         )
     }
@@ -104,22 +196,29 @@ class TrendTab extends Component{
         };
     }
 
-    getFetchURL(catergory,timeSpan){
-        return API_URL + catergory + timeSpan;
+    componentWillReceiveProps(nextProps) {
+        if (nextProps.timeSpan !== this.props.timeSpan){
+            this.request(false,nextProps.timeSpan);
+        }
+
     }
 
-    request(isUserLoading){
+
+    getFetchURL(catergory,timeSpan){
+        return API_URL + catergory + '?' + timeSpan.searchText;
+    }
+
+    request(isUserLoading,timeSpan){
 
         this.setState({
             isLoading:true
         });
 
-        let appURL = this.getFetchURL(this.props.tabLabel,'?since=daily');
+        let appURL = this.getFetchURL(this.props.tabLabel,timeSpan);
 
         this.dataRepository.fetchRepository(appURL)
             .then((result)=>{
-
-                console.log(result);
+                
                 if (!isUserLoading){
                     let items =result&&result.items?result.items:result?result:[];
 
@@ -140,7 +239,7 @@ class TrendTab extends Component{
                 // else {
                 // DeviceEventEmitter.emit('showToast','显示缓存数据');
                 // this.toast.show('显示缓存数据',DURATION.LENGTH_LONG)
-                alert('显示缓存数据')
+                // alert('显示缓存数据')
                 // }
 
             })
@@ -153,7 +252,7 @@ class TrendTab extends Component{
                     isLoading:false
                 });
 
-                alert('显示网络数据')
+                // alert('显示网络数据')
             })
             .catch((error)=>{
                 this.setState({
@@ -165,8 +264,7 @@ class TrendTab extends Component{
     }
 
     componentDidMount() {
-        this.request(false);
-
+        this.request(false,this.props.timeSpan);
     }
     onSelect = (item)=>{
         this.props.navigation.navigate('RepositoryDetail',{
@@ -190,7 +288,7 @@ class TrendTab extends Component{
                     data={this.state.dataSource}
                     renderItem={({item})=>this.renderItemCell(item)}
                     keyExtractor={this._keyExtractor}
-                    onRefresh={()=>{this.request(true)}}
+                    onRefresh={()=>{this.request(true,this.props.timeSpan)}}
                     refreshing={this.state.isLoading}
                 />
             </View>

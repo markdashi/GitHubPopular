@@ -9,23 +9,48 @@ import {
     View
 } from 'react-native';
 
-
+import {FLAG_LANGUAGE} from '../../js/expand/dao/LanguageDao'
 
 export default class MyPage extends Component<{}>{
     render(){
         return(
             <View style={styles.container}>
-                <Text onPress={()=>{
+                <Text
+                    style={styles.text}
+                    onPress={()=>{
                         this.props.navigation.navigate('CustomKeyPage',{
-                            isRemoveKey:false
+                            isRemoveKey:false,
+                            flag:FLAG_LANGUAGE.flag_language
+                        })
+                }}>{'自定义语言'}</Text>
+                <Text
+                    style={styles.text}
+                    onPress={()=>{
+                        this.props.navigation.navigate('CustomKeyPage',{
+                            isRemoveKey:false,
+                            flag:FLAG_LANGUAGE.flag_key
                         })
                 }}>{'自定义标签页'}</Text>
-                <Text onPress={()=>{
-                        this.props.navigation.navigate('SortKeyPage')
+                <Text
+                style={styles.text}
+                onPress={()=>{
+                        this.props.navigation.navigate('SortKeyPage',{
+                            flag:FLAG_LANGUAGE.flag_key
+                        })
                 }}>{'标签排序'}</Text>
-                <Text onPress={()=>{
+                <Text
+                    style={styles.text}
+                    onPress={()=>{
+                        this.props.navigation.navigate('SortKeyPage',{
+                            flag:FLAG_LANGUAGE.flag_language
+                        })
+                }}>{'语言排序'}</Text>
+                <Text
+                    style={styles.text}
+                    onPress={()=>{
                         this.props.navigation.navigate('CustomKeyPage',{
-                            isRemoveKey:true
+                            isRemoveKey:true,
+                            flag:FLAG_LANGUAGE.flag_language
                         })
                 }}>{'标签移除'}</Text>
             </View>
@@ -35,5 +60,8 @@ export default class MyPage extends Component<{}>{
 const styles = StyleSheet.create({
     container:{
         flex:1
+    },
+    text:{
+        fontSize:20
     }
 })

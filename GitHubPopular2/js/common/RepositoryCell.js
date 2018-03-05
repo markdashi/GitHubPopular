@@ -20,7 +20,35 @@ export default class RepositoryCell extends Component<{}>{
         data:PropType.object
     };
 
+    // 构造
+      constructor(props) {
+        super(props);
+        // 初始状态
+        this.state = {
+            isFavorite:false,
+            favoriteIcon:require('../../res/images/ic_unstar_transparent.png')
+        };
+      }
+
+
+    onPressavoriteButton(){
+        this.setFavoriteState(!this.state.isFavorite);
+    }
+
+    setFavoriteState(isFavorite){
+        this.setState({
+            isFavorite:isFavorite,
+            favoriteIcon:isFavorite?require('../../res/images/ic_star.png'):require('../../res/images/ic_unstar_transparent.png')
+        })
+    }
+
     render(){
+
+        let FavoriteButton = <TouchableOpacity
+            onPress={()=>{this.onPressavoriteButton()}}>
+            <Image style={styles.starStyle} source={this.state.favoriteIcon}/>
+        </TouchableOpacity>;
+
         return(
             <TouchableOpacity
                 onPress={this.props.onSelect}
@@ -38,7 +66,7 @@ export default class RepositoryCell extends Component<{}>{
                             <Text>{'Star:'}</Text>
                             <Text>{this.props.data.stargazers_count}</Text>
                         </View>
-                        <Image style={styles.starStyle} source={require('../../res/images/ic_star.png')}/>
+                        {FavoriteButton}
                     </View>
                 </View>
             </TouchableOpacity>
@@ -69,7 +97,8 @@ const styles = StyleSheet.create({
     },
     starStyle:{
         width:22,
-        height:22
+        height:22,
+        tintColor:'#2196F3'
     },
     title:{
         fontSize:16,

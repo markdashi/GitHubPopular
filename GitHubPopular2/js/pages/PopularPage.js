@@ -32,7 +32,7 @@ export default class PopularPage extends Component<{}>{
 
     static navigationOptions={
         title:'最热',
-    }
+    };
     
     // 构造
       constructor(props) {
@@ -142,6 +142,12 @@ class PopularTab extends Component{
         return URL + key + QUERY_STA;
     }
 
+    /**
+     * 更新project Item 收藏状态
+     * */
+    flushFavoriteState(){
+        let projectModels = [];
+    }
     request(isUserLoading){
 
         this.setState({
@@ -156,24 +162,25 @@ class PopularTab extends Component{
                 if (!isUserLoading){
                     let items =result&&result.items?result.items:result?result:[];
 
-                    this.setState({
-                        text:JSON.stringify(result),
-                        dataSource:items,
-                        isLoading:false
-                    })
+                    this.flushFavoriteState();
+                    // this.setState({
+                    //     text:JSON.stringify(result),
+                    //     dataSource:items,
+                    //     isLoading:false
+                    // })
                 }else {
                     return this.dataRepository.fetchNetRepository(appURL);
                 }
 
-                // if (result && result.update_date && !this.dataRepository.checkData(result.update_date)){
-                //
-                //      return this.dataRepository.fetchNetRepository(appURL);
-                // }
+                if (result && result.update_date && !this.dataRepository.checkData(result.update_date)){
+
+                     return this.dataRepository.fetchNetRepository(appURL);
+                }
                 //
                 // else {
                     // DeviceEventEmitter.emit('showToast','显示缓存数据');
                     // this.toast.show('显示缓存数据',DURATION.LENGTH_LONG)
-                    alert('显示缓存数据')
+                    // alert('显示缓存数据')
                 // }
 
             })
@@ -186,7 +193,7 @@ class PopularTab extends Component{
                     isLoading:false
                 });
 
-                alert('显示网络数据')
+                // alert('显示网络数据')
             })
             .catch((error)=>{
                 this.setState({
@@ -207,11 +214,13 @@ class PopularTab extends Component{
         })
     }
 
-    renderItemCell(item){
+    renderItemCell(projectModel){
         return(
             <RepositoryCell
                 onSelect={()=>this.onSelect(item)}
-                data={item}/>
+                data={item}
+                projectModel={projectModel}
+            />
         )
     }
     _keyExtractor = (item, index) => ''+item.id;

@@ -27,9 +27,11 @@ export default class SortKeyPage extends Component<{}>{
 
         const params = navigation.state.params || {};
 
+        let title = params.flag === FLAG_LANGUAGE.flag_key?'标签排序':'语言排序';
+
         return {
 
-            title:'自定义标签',
+            title:title,
 
             headerRight: (
                 <HeaderRightButton
@@ -130,7 +132,7 @@ export default class SortKeyPage extends Component<{}>{
 
     componentDidMount() {
 
-        this.languageDao=new LanguageDao(FLAG_LANGUAGE.flag_key);
+        this.languageDao=new LanguageDao(this.props.navigation.state.params.flag);
 
         this.loadData()
     }
