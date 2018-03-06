@@ -22,13 +22,55 @@ import HTMLView from 'react-native-htmlview';
 export default class TrendingCell extends Component<{}>{
 
     static propTypes={
-        data:PropType.object
+        // data:PropType.object,
+        projectModel:PropType.object
     };
+
+    // 构造
+    constructor(props) {
+        super(props);
+        // 初始状态
+        this.state = {
+            isFavorite:this.props.projectModel.isFavorite,
+            favoriteIcon:this.props.projectModel.isFavorite?
+                require('../../res/images/ic_star.png')
+                :require('../../res/images/ic_unstar_transparent.png')
+        };
+    }
+
+    componentWillReceiveProps(nextProps) {
+        this.setFavoriteState(nextProps.projectModel.isFavorite)
+    }
+
+    onPressavoriteButton(){
+
+        let favorite = !this.state.isFavorite;
+        this.setFavoriteState(favorite);
+        this.props.projectModel.isFavorite = favorite; //修复数据刷新不及时的bug
+        if (this.props.FavoriteClick){this.props.FavoriteClick(this.props.projectModel.item,!this.state.isFavorite)}
+    }
+
+    setFavoriteState(isFavorite){
+        this.setState({
+            isFavorite:isFavorite,
+            favoriteIcon:isFavorite?require('../../res/images/ic_star.png'):require('../../res/images/ic_unstar_transparent.png')
+        })
+    }
+
 
     render(){
 
-        let description = '<p>'+this.props.data.description+ '</p>';
 
+
+        let FavoriteButton = <TouchableOpacity
+            onPress={()=>{this.onPressavoriteButton()}}>
+            <Image style={styles.starStyle} source={this.state.favoriteIcon}/>
+        </TouchableOpacity>;
+
+
+        let item = this.props.projectModel.item;
+
+        let description = '<p>'+item.description+ '</p>';
 
         return(
             <TouchableOpacity
@@ -36,7 +78,7 @@ export default class TrendingCell extends Component<{}>{
                 style={styles.container}
             >
                 <View style={styles.cell_container}>
-                    <Text style={styles.title}>{this.props.data.fullName}</Text>
+                    <Text style={styles.title}>{item.fullName}</Text>
                     {/*<Text style={styles.description}>{this.props.data.description}</Text>*/}
                     <HTMLView
                         value={description}
@@ -47,16 +89,16 @@ export default class TrendingCell extends Component<{}>{
                         // onLinkPress={(url) => console.log('clicked link: ', url)}
                         onLinkPress={()=>{}}
                     />
-                    <Text style={styles.description}>{this.props.data.meta}</Text>
+                    <Text style={styles.description}>{item.meta}</Text>
                     <View style={styles.bottomViewStyle}>
                         <View style={styles.AuthorStyle}>
                             <Text style={styles.author}>{'Build by:'}</Text>
-                            {this.props.data.contributors.map((result,i,arr)=>{
+                            {item.contributors.map((result,i,arr)=>{
                                 return <Image key={i} source={{uri:arr[i]}} style={styles.avatarImage}/>
                             })}
 
                         </View>
-                        <Image style={styles.starStyle} source={require('../../res/images/ic_star.png')}/>
+                        {FavoriteButton}
                     </View>
                 </View>
             </TouchableOpacity>
@@ -87,7 +129,8 @@ const styles = StyleSheet.create({
     },
     starStyle:{
         width:22,
-        height:22
+        height:22,
+        tintColor:'#2196F3'
     },
     title:{
         fontSize:16,

@@ -26,7 +26,7 @@ export default class FavoritePage extends Component<{}>{
     render(){
         return(
             <View style={styles.container}>
-                <TrendingTest />
+               
             </View>
         )
     }

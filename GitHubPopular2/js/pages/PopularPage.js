@@ -19,7 +19,11 @@ import httpUtils from '../Utils/HttpUtils';
 import dataRepository,{FLAG_STOREAGE} from '../expand/dao/dataRepository';
 import RepositoryCell from '../common/RepositoryCell';
 import LanguageDao,{FLAG_LANGUAGE} from '../expand/dao/LanguageDao';
+import ProjectModel from 'ProjectModel';
+import FavoriteDao from 'FavoriteDao';
+import Utils from 'Utils';
 
+var FavoriteDaoUtil = new FavoriteDao(FLAG_STOREAGE.flag_popular);
 
 const URL = "https://api.github.com/search/repositories?q=";
 const QUERY_STA = '&sort=stars';
@@ -44,7 +48,7 @@ export default class PopularPage extends Component<{}>{
         // 初始状态
         this.state = {
             text:'',
-            languages:[]
+            languages:[],
         };
       }
 
@@ -69,6 +73,7 @@ export default class PopularPage extends Component<{}>{
     }
 
     componentDidMount() {
+
         this.loadData()
 
         // this.listener = DeviceEventEmitter.addListener('showToast',(text)=>{
@@ -91,7 +96,6 @@ export default class PopularPage extends Component<{}>{
             .catch((error)=>{
                 console.log(error);
             })
-
     }
 
 
@@ -134,7 +138,8 @@ class PopularTab extends Component{
         this.state = {
             text:'',
             dataSource:[],
-            isLoading:false
+            isLoading:false,
+            FavoriteKeys:[]
         };
     }
 
@@ -147,7 +152,42 @@ class PopularTab extends Component{
      * */
     flushFavoriteState(){
         let projectModels = [];
+        let items = this.items;
+        for (var i =0,len=items.length;i<len;i++){
+             projectModels.push(new ProjectModel(items[i],Utils.checkFavorite(items[i],this.state.FavoriteKeys)));
+        }
+
+        this.updateState({
+            isLoading:false,
+            dataSource:projectModels
+        })
     }
+
+    // shouldComponentUpdate(nextProps,nextState) {
+    //     return true;
+    // }
+
+    //获取收藏的keys
+    getFavoriteKeys=()=>{
+        FavoriteDaoUtil.getFavoriteKeys()
+            .then(keys=>{
+                if (keys){
+                    this.updateState({
+                        FavoriteKeys:keys
+                    })
+                }
+                this.flushFavoriteState();
+            })
+            .catch(error=>{
+                this.flushFavoriteState();
+            })
+    }
+
+    updateState(dic){
+        this.setState(dic)
+    }
+
+
     request(isUserLoading){
 
         this.setState({
@@ -160,9 +200,10 @@ class PopularTab extends Component{
 
 
                 if (!isUserLoading){
-                    let items =result&&result.items?result.items:result?result:[];
+                    this.items =result&&result.items?result.items:result?result:[];
 
-                    this.flushFavoriteState();
+                    this.getFavoriteKeys();
+                    // this.flushFavoriteState();
                     // this.setState({
                     //     text:JSON.stringify(result),
                     //     dataSource:items,
@@ -188,10 +229,15 @@ class PopularTab extends Component{
 
 
                 if (!items || items.length===0)return;
-                this.setState({
-                    dataSource:items,
-                    isLoading:false
-                });
+                this.items = items;
+
+                this.getFavoriteKeys();
+                // this.flushFavoriteState();
+                
+                // this.setState({
+                //     dataSource:items,
+                //     isLoading:false
+                // });
 
                 // alert('显示网络数据')
             })
@@ -208,22 +254,39 @@ class PopularTab extends Component{
         this.request(false);
 
     }
+
+    OnFavorite(item,isFavorite){
+        
+        
+        if (isFavorite){
+            FavoriteDaoUtil.saveFavoriteItem(item.id.toString(),JSON.stringify(item));
+        }else {
+            FavoriteDaoUtil.removeFavoriteItem(item.id.toString());
+        }
+
+    }
+
     onSelect = (item)=>{
         this.props.navigation.navigate('RepositoryDetail',{
-            item:item
+            projectModel:item,
+            flag:FLAG_STOREAGE.flag_popular,
+            callback:()=>{
+                this.getFavoriteKeys();
+            }
         })
     }
 
     renderItemCell(projectModel){
         return(
             <RepositoryCell
-                onSelect={()=>this.onSelect(item)}
-                data={item}
+                onSelect={()=>this.onSelect(projectModel)}
+                // data={projectModel}
                 projectModel={projectModel}
+                FavoriteClick={(item,isFavorite)=>{this.OnFavorite(item,isFavorite)}}
             />
         )
     }
-    _keyExtractor = (item, index) => ''+item.id;
+    _keyExtractor = (item, index) => item.item.id.toString();
 
     render(){
         return(

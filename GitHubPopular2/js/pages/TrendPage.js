@@ -19,6 +19,10 @@ import dataRepository,{FLAG_STOREAGE} from '../expand/dao/dataRepository';
 import TrendingCell from 'TrendingCell';
 import LanguageDao,{FLAG_LANGUAGE} from '../expand/dao/LanguageDao';
 
+import FavoriteDao from 'FavoriteDao';
+import ProjectModel from 'ProjectModel';
+import Utils from 'Utils';
+
 import Popover from '../common/Popover';
 import TimeSpan from 'TimeSpan';
 var timeSpanTextArray=[
@@ -89,6 +93,7 @@ export default class TrendPage extends Component<{}>{
 
         this.languageDao = new LanguageDao(FLAG_LANGUAGE.flag_language);
 
+
         // 初始状态
         this.state = {
             languages: [],
@@ -100,14 +105,13 @@ export default class TrendPage extends Component<{}>{
 
     componentDidMount() {
 
-        this.props.navigation.setParams({showPopover:this.showPopover})
+        this.props.navigation.setParams({showPopover:this.showPopover});
 
         this.loadData()
     }
 
 
     loadData(){
-
         this.languageDao.fetch()
             .then((result)=>{
                 this.setState({
@@ -188,11 +192,14 @@ class TrendTab extends Component{
         super(props);
 
         this.dataRepository = new dataRepository(FLAG_STOREAGE.flag_trending);
+
+        this.FavoriteDaoUtil = new FavoriteDao(FLAG_STOREAGE.flag_trending);
         // 初始状态
         this.state = {
             text:'',
             dataSource:[],
-            isLoading:false
+            isLoading:false,
+            FavoriteKeys:[]
         };
     }
 
@@ -201,6 +208,43 @@ class TrendTab extends Component{
             this.request(false,nextProps.timeSpan);
         }
 
+    }
+
+    /**
+     * 更新project Item 收藏状态
+     * */
+    flushFavoriteState(){
+        let projectModels = [];
+        let items = this.items;
+        for (var i =0,len=items.length;i<len;i++){
+            projectModels.push(new ProjectModel(items[i],Utils.checkFavorite(items[i],this.state.FavoriteKeys)));
+        }
+
+        this.updateState({
+            isLoading:false,
+            dataSource:projectModels
+        })
+    }
+
+
+    //获取收藏的keys
+    getFavoriteKeys=()=>{
+        this.FavoriteDaoUtil.getFavoriteKeys()
+            .then(keys=>{
+                if (keys){
+                    this.updateState({
+                        FavoriteKeys:keys
+                    })
+                }
+                this.flushFavoriteState();
+            })
+            .catch(error=>{
+                this.flushFavoriteState();
+            })
+    }
+
+    updateState(dic){
+        this.setState(dic)
     }
 
 
@@ -220,13 +264,16 @@ class TrendTab extends Component{
             .then((result)=>{
                 
                 if (!isUserLoading){
-                    let items =result&&result.items?result.items:result?result:[];
+                    this.items =result&&result.items?result.items:result?result:[];
 
-                    this.setState({
-                        text:JSON.stringify(result),
-                        dataSource:items,
-                        isLoading:false
-                    })
+
+                    this.getFavoriteKeys();
+
+                    // this.setState({
+                    //     text:JSON.stringify(result),
+                    //     dataSource:items,
+                    //     isLoading:false
+                    // })
                 }else {
                     return this.dataRepository.fetchNetRepository(appURL);
                 }
@@ -247,10 +294,15 @@ class TrendTab extends Component{
 
 
                 if (!items || items.length===0)return;
-                this.setState({
-                    dataSource:items,
-                    isLoading:false
-                });
+
+                this.items = items;
+
+                this.getFavoriteKeys();
+
+                // this.setState({
+                //     dataSource:items,
+                //     isLoading:false
+                // });
 
                 // alert('显示网络数据')
             })
@@ -268,18 +320,20 @@ class TrendTab extends Component{
     }
     onSelect = (item)=>{
         this.props.navigation.navigate('RepositoryDetail',{
-            item:item
+            projectModel:item
         })
     }
 
-    renderItemCell(item){
+    renderItemCell(projectModel){
         return(
             <TrendingCell
-                onSelect={()=>this.onSelect(item)}
-                data={item}/>
+                onSelect={()=>this.onSelect(projectModel)}
+                // data={item}
+                projectModel={projectModel}
+            />
         )
     }
-    _keyExtractor = (item, index) => '' + item.id+index;
+    _keyExtractor = (item, index) => '' + item.id + index;
 
     render(){
         return(

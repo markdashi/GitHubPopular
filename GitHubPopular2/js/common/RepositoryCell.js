@@ -6,7 +6,8 @@ import {
     Text,
     View,
     ScrollView,
-    TextInput, TouchableOpacity,
+    TextInput,
+    TouchableOpacity,
     Image
 } from 'react-native';
 
@@ -17,7 +18,9 @@ import Toast,{DURATION} from 'react-native-easy-toast';
 export default class RepositoryCell extends Component<{}>{
     
     static propTypes={
-        data:PropType.object
+        // data:PropType.object,
+        projectModel:PropType.object,
+        FavoriteClick:PropType.func
     };
 
     // 构造
@@ -25,14 +28,24 @@ export default class RepositoryCell extends Component<{}>{
         super(props);
         // 初始状态
         this.state = {
-            isFavorite:false,
-            favoriteIcon:require('../../res/images/ic_unstar_transparent.png')
+            isFavorite:this.props.projectModel.isFavorite,
+            favoriteIcon:this.props.projectModel.isFavorite?
+                require('../../res/images/ic_star.png')
+                :require('../../res/images/ic_unstar_transparent.png')
         };
       }
 
 
+    componentWillReceiveProps(nextProps) {
+        this.setFavoriteState(nextProps.projectModel.isFavorite)
+    }
+
     onPressavoriteButton(){
-        this.setFavoriteState(!this.state.isFavorite);
+
+        let favorite = !this.state.isFavorite;
+        this.setFavoriteState(favorite);
+        this.props.projectModel.isFavorite = favorite; //修复数据刷新不及时的bug
+        if (this.props.FavoriteClick){this.props.FavoriteClick(this.props.projectModel.item,!this.state.isFavorite)}
     }
 
     setFavoriteState(isFavorite){
@@ -49,22 +62,24 @@ export default class RepositoryCell extends Component<{}>{
             <Image style={styles.starStyle} source={this.state.favoriteIcon}/>
         </TouchableOpacity>;
 
+        let item = this.props.projectModel.item;
+
         return(
             <TouchableOpacity
                 onPress={this.props.onSelect}
                 style={styles.container}
             >
                 <View style={styles.cell_container}>
-                    <Text style={styles.title}>{this.props.data.full_name}</Text>
-                    <Text style={styles.description}>{this.props.data.description}</Text>
+                    <Text style={styles.title}>{item.full_name}</Text>
+                    <Text style={styles.description}>{item.description}</Text>
                     <View style={styles.bottomViewStyle}>
                        <View style={styles.AuthorStyle}>
                            <Text>{'Author:'}</Text>
-                           <Image source={{uri:this.props.data.owner.avatar_url}} style={styles.avatarImage}/>
+                           <Image source={{uri:item.owner.avatar_url}} style={styles.avatarImage}/>
                        </View>
                         <View style={styles.StarStyle}>
                             <Text>{'Star:'}</Text>
-                            <Text>{this.props.data.stargazers_count}</Text>
+                            <Text>{item.stargazers_count}</Text>
                         </View>
                         {FavoriteButton}
                     </View>

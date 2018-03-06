@@ -12,7 +12,12 @@ import {
 
 const TRENDING_URL = "https://github.com/";
 
+import {FLAG_STOREAGE} from '../expand/dao/dataRepository';
+import FavoriteDao from 'FavoriteDao';
+
+
 import HeaderLeftButton from 'HeaderLeftButton';
+import HeaderRightButton from 'HeaderRightButton';
 
 export default class RepositoryDetail extends Component<{}>{
 
@@ -20,9 +25,16 @@ export default class RepositoryDetail extends Component<{}>{
     static navigationOptions=({navigation})=>{
 
         const params = navigation.state.params || {};
-        let item = params.item;
+        let item = params.projectModel.item;
 
         var title = item.name?item.name:item.fullName;
+
+        let FavoriteIcon = 0
+        if(!params.isFavorite){
+            FavoriteIcon = params.projectModel.isFavorite?require('../../res/images/ic_star.png'):require('../../res/images/ic_unstar_transparent.png')
+        }else {
+            FavoriteIcon = params.isFavorite?require('../../res/images/ic_star.png'):require('../../res/images/ic_unstar_transparent.png')
+        }
 
         return{
             title:title,
@@ -32,6 +44,15 @@ export default class RepositoryDetail extends Component<{}>{
                       if (params.goBack){params.goBack()}
                     }}
                 />
+            ),
+            headerRight:(
+                <HeaderRightButton
+                    isTextButton={false}
+                    onPress={()=>{
+                        if(params.onClickFavorite){params.onClickFavorite()}
+                    }}
+                    buttonIcon={FavoriteIcon}
+                />
             )
         }
     }
@@ -40,9 +61,11 @@ export default class RepositoryDetail extends Component<{}>{
     constructor(props) {
         super(props);
 
-        let url = this.props.navigation.state.params.item.html_url?
-                    this.props.navigation.state.params.item.html_url:
-                    TRENDING_URL + this.props.navigation.state.params.itemfullName;
+        const params = this.props.navigation.state.params || {};
+
+        let url = params.projectModel.item.html_url?
+            params.projectModel.item.html_url:
+                    TRENDING_URL + params.projectModel.item.fullName;
 
         // 初始状态
         this.state = {
@@ -53,7 +76,11 @@ export default class RepositoryDetail extends Component<{}>{
     }
 
     componentDidMount() {
-        this.props.navigation.setParams({goBack:this.goBack})
+
+        //FLAG_STOREAGE.flag_popular
+        this.FavoriteDaoUtil = new FavoriteDao(this.props.navigation.state.params.flag);
+
+        this.props.navigation.setParams({goBack:this.goBack,onClickFavorite:this.onClickFavorite})
     }
 
     onNavigationStateChange(navState){
@@ -64,11 +91,28 @@ export default class RepositoryDetail extends Component<{}>{
         })
     }
 
+    //收藏按钮点击
+    onClickFavorite = ()=>{
+        
+        let ProjectModel = this.props.navigation.state.params.projectModel;
+        ProjectModel.isFavorite = !ProjectModel.isFavorite;
+
+        this.props.navigation.setParams({isFavorite:ProjectModel.isFavorite})
+        if (ProjectModel.isFavorite){
+            this.FavoriteDaoUtil.saveFavoriteItem(ProjectModel.item.id.toString(),JSON.stringify(ProjectModel.item));
+        }else {
+            this.FavoriteDaoUtil.removeFavoriteItem(ProjectModel.item.id.toString());
+        }
+    };
+
+
+    //返回
     goBack = ()=>{
         if (this.state.canGoBack){
             this.webView.goBack();
         }else {
             this.props.navigation.goBack();
+            this.props.navigation.state.params.callback();
         }
     };
 

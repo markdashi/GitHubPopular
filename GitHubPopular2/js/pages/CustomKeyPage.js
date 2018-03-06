@@ -45,6 +45,7 @@ export default class CustomKeyPage extends Component<{}>{
             headerRight: (
 
                 <HeaderRightButton
+                    isTextButton={true}
                     onPress={()=>{
                         if (params.onSave){params.onSave()}
                     }}
