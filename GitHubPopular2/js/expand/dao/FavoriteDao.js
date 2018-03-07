@@ -37,7 +37,7 @@ export default class FavoriteDao{
     * */
     removeFavoriteItem(key,callback){
         AsyncStorage.removeItem(key,(error)=>{
-            this.updateFavoriteKeys(key,false)
+            this.updateFavoriteKeys(key,false,callback)
         })
     }
 
@@ -69,7 +69,7 @@ export default class FavoriteDao{
     saveFavoriteItem(key,value,callback){
         AsyncStorage.setItem(key,value,(error)=>{
             if (!error){
-                this.updateFavoriteKeys(key,true);
+                this.updateFavoriteKeys(key,true,callback);
             }
         })
     }
@@ -79,7 +79,7 @@ export default class FavoriteDao{
     * key
     * isAdd true 添加,收藏项目,删除
     * */
-    updateFavoriteKeys(key,isAdd){
+    updateFavoriteKeys(key,isAdd,callback){
         AsyncStorage.getItem(this.FavoriteKey,(error,result)=>{
             if (!error){
                 var favoriteKey=[];
@@ -96,9 +96,37 @@ export default class FavoriteDao{
                         favoriteKey.splice(index,1);
                     }
                 }
-                AsyncStorage.setItem(this.FavoriteKey,JSON.stringify(favoriteKey))
+                AsyncStorage.setItem(this.FavoriteKey,JSON.stringify(favoriteKey),callback)
             }
         })
     }
+
+    //获取所有收藏的项目
+    getAllStoreItems(){
+        return new Promise((resolve,reject)=>{
+            this.getFavoriteKeys().then(keys=>{
+                var stores = []
+                AsyncStorage.multiGet(keys,(errors,results)=>{
+                    if (!errors){
+                        results.map((result,i,results)=>{
+                            let item = results[i][1];
+                            if (item){stores.push(JSON.parse(item))}
+                        })
+                        resolve(stores);
+                    }else {
+                        reject(errors);
+                    }
+                })
+            })
+                .catch(error=>{
+                    reject(error)
+                })
+        });
+    }
+
+
+
+
+
 
 }

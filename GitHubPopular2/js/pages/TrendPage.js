@@ -11,7 +11,8 @@ import {
     TextInput,
     FlatList,
     TouchableOpacity,
-    Image
+    Image,
+    DeviceEventEmitter
 } from 'react-native';
 
 
@@ -99,15 +100,26 @@ export default class TrendPage extends Component<{}>{
             languages: [],
             isVisible: false,
             fromRect: {},
-            timeSpan: timeSpanTextArray[0]
+            timeSpan: timeSpanTextArray[0],
+            isFavoriteChanged:false
         }
     }
 
     componentDidMount() {
 
+        this.listener = DeviceEventEmitter.addListener('isFavoriteChanged_trending',()=>{
+            this.setState({
+                isFavoriteChanged:true
+            })
+        });
+
         this.props.navigation.setParams({showPopover:this.showPopover});
 
-        this.loadData()
+        this.loadData();
+    }
+
+    componentWillUnmount() {
+        this.listener && this.listener.remove()
     }
 
 
@@ -158,7 +170,7 @@ export default class TrendPage extends Component<{}>{
         >
             {this.state.languages.map((reult,i,arr)=>{
                 let lan = arr[i]
-                return lan.checked?<TrendTab tabLabel={lan.name} key={i} timeSpan={this.state.timeSpan} {...this.props}>lan.name</TrendTab>:null
+                return lan.checked?<TrendTab tabLabel={lan.name} key={i} isFavoriteChanged={this.state.isFavoriteChanged} timeSpan={this.state.timeSpan} {...this.props}>lan.name</TrendTab>:null
             })}
 
         </ScrollableTabView>:null;
@@ -187,6 +199,7 @@ export default class TrendPage extends Component<{}>{
 
 
 class TrendTab extends Component{
+
     // 构造
     constructor(props) {
         super(props);
@@ -194,6 +207,7 @@ class TrendTab extends Component{
         this.dataRepository = new dataRepository(FLAG_STOREAGE.flag_trending);
 
         this.FavoriteDaoUtil = new FavoriteDao(FLAG_STOREAGE.flag_trending);
+
         // 初始状态
         this.state = {
             text:'',
@@ -202,12 +216,13 @@ class TrendTab extends Component{
             FavoriteKeys:[]
         };
     }
-
     componentWillReceiveProps(nextProps) {
         if (nextProps.timeSpan !== this.props.timeSpan){
             this.request(false,nextProps.timeSpan);
+        }else if (nextProps.isFavoriteChanged == true){
+            this.props.isFavoriteChanged = false
+            this.request(false,this.props.timeSpan);
         }
-
     }
 
     /**
@@ -266,7 +281,6 @@ class TrendTab extends Component{
                 if (!isUserLoading){
                     this.items =result&&result.items?result.items:result?result:[];
 
-
                     this.getFavoriteKeys();
 
                     // this.setState({
@@ -288,7 +302,6 @@ class TrendTab extends Component{
                 // this.toast.show('显示缓存数据',DURATION.LENGTH_LONG)
                 // alert('显示缓存数据')
                 // }
-
             })
             .then(items=>{
 
@@ -316,11 +329,34 @@ class TrendTab extends Component{
     }
 
     componentDidMount() {
+
+        // this.listener = DeviceEventEmitter.addListener('isFavoriteChanged_trending',()=>{
+        //     this.setState({isFavoriteChanged:true})
+        // });
+
         this.request(false,this.props.timeSpan);
     }
+
+    // componentWillUnmount() {
+    //     this.listene&&this.listener.remove()
+    // }
+
+    OnFavorite(item,isFavorite){
+
+        if (isFavorite){
+            this.FavoriteDaoUtil.saveFavoriteItem(item.fullName,JSON.stringify(item));
+        }else {
+            this.FavoriteDaoUtil.removeFavoriteItem(item.fullName);
+        }
+    }
+
     onSelect = (item)=>{
         this.props.navigation.navigate('RepositoryDetail',{
-            projectModel:item
+            projectModel:item,
+            callback:()=>{
+                this.getFavoriteKeys();
+            },
+            flag:FLAG_STOREAGE.flag_trending
         })
     }
 
@@ -328,12 +364,12 @@ class TrendTab extends Component{
         return(
             <TrendingCell
                 onSelect={()=>this.onSelect(projectModel)}
-                // data={item}
                 projectModel={projectModel}
+                FavoriteClick={(item,isFavorite)=>{this.OnFavorite(item,isFavorite)}}
             />
         )
     }
-    _keyExtractor = (item, index) => '' + item.id + index;
+    _keyExtractor = (item, index) =>  item.item.fullName;
 
     render(){
         return(

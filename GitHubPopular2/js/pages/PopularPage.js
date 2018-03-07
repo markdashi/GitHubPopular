@@ -257,13 +257,11 @@ class PopularTab extends Component{
 
     OnFavorite(item,isFavorite){
         
-        
         if (isFavorite){
             FavoriteDaoUtil.saveFavoriteItem(item.id.toString(),JSON.stringify(item));
         }else {
             FavoriteDaoUtil.removeFavoriteItem(item.id.toString());
         }
-
     }
 
     onSelect = (item)=>{

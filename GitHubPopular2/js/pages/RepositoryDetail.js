@@ -57,16 +57,23 @@ export default class RepositoryDetail extends Component<{}>{
         }
     }
 
+    componentWillReceiveProps(nextProps) {
+        console.log(nextProps);
+    }
+
     // 构造
     constructor(props) {
         super(props);
+
+
 
         const params = this.props.navigation.state.params || {};
 
         let url = params.projectModel.item.html_url?
             params.projectModel.item.html_url:
                     TRENDING_URL + params.projectModel.item.fullName;
-
+        //FLAG_STOREAGE.flag_popular
+        this.FavoriteDaoUtil = new FavoriteDao(params.flag);
         // 初始状态
         this.state = {
             url:url,
@@ -76,9 +83,6 @@ export default class RepositoryDetail extends Component<{}>{
     }
 
     componentDidMount() {
-
-        //FLAG_STOREAGE.flag_popular
-        this.FavoriteDaoUtil = new FavoriteDao(this.props.navigation.state.params.flag);
 
         this.props.navigation.setParams({goBack:this.goBack,onClickFavorite:this.onClickFavorite})
     }
@@ -97,11 +101,14 @@ export default class RepositoryDetail extends Component<{}>{
         let ProjectModel = this.props.navigation.state.params.projectModel;
         ProjectModel.isFavorite = !ProjectModel.isFavorite;
 
-        this.props.navigation.setParams({isFavorite:ProjectModel.isFavorite})
+        this.props.navigation.setParams({isFavorite:ProjectModel.isFavorite});
+
+        let key = this.props.navigation.state.params.flag === FLAG_STOREAGE.flag_popular?ProjectModel.item.id.toString():ProjectModel.item.fullName;
+
         if (ProjectModel.isFavorite){
-            this.FavoriteDaoUtil.saveFavoriteItem(ProjectModel.item.id.toString(),JSON.stringify(ProjectModel.item));
+            this.FavoriteDaoUtil.saveFavoriteItem(key,JSON.stringify(ProjectModel.item));
         }else {
-            this.FavoriteDaoUtil.removeFavoriteItem(ProjectModel.item.id.toString());
+            this.FavoriteDaoUtil.removeFavoriteItem(key);
         }
     };
 

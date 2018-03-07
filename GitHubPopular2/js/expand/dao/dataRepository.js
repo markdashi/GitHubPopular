@@ -11,7 +11,7 @@ import {
     AsyncStorage
 } from 'react-native';
 
-export var FLAG_STOREAGE={flag_popular:'popular',flag_trending:'trending'};
+export var FLAG_STOREAGE={flag_popular:'popular',flag_trending:'trending',flag_favorite:'favorite'};
 
 // 数据缓存策略:
 // 1.程序启动加载缓存数据
